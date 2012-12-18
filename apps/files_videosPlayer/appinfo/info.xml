@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<info>
+	<id>files_videosPlayer</id>
+	<name>Video player</name>
+	<description>A simple Video player using Video.js http://videojs.com/</description>
+	<version>0.2</version>
+	<licence>AGPL</licence>
+	<author>Francois Dabonot</author>
+        <shipped>true</shipped>
+	<require>4.5</require>
+</info>
