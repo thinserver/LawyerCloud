@@ -57,18 +57,18 @@ class OC_User_Database extends OC_User_Backend {
 	/**
 	 * @brief Create a new user
 	 * @param $uid The username of the user to create
-	 * @param $password The password of the new user
+	 * @param $secret The password of the new user
 	 * @returns true/false
 	 *
 	 * Creates a new user. Basic checking of username is done in OC_User
 	 * itself, not in its subclasses.
 	 */
-	public function createUser( $uid, $password ) {
+	public function createUser( $uid, $secret ) {
 		if( $this->userExists($uid) ) {
 			return false;
 		}else{
 			$hasher=$this->getHasher();
-			$hash = $hasher->HashPassword($password.OC_Config::getValue('passwordsalt', ''));
+			$hash = $hasher->HashPassword($secret.OC_Config::getValue('passwordsalt', ''));
 			$query = OC_DB::prepare( 'INSERT INTO `*PREFIX*users` ( `uid`, `password` ) VALUES( ?, ? )' );
 			$result = $query->execute( array( $uid, $hash));
 
@@ -93,15 +93,15 @@ class OC_User_Database extends OC_User_Backend {
 	/**
 	 * @brief Set password
 	 * @param $uid The username
-	 * @param $password The new password
+	 * @param $secret The new password
 	 * @returns true/false
 	 *
 	 * Change the password of a user
 	 */
-	public function setPassword( $uid, $password ) {
+	public function setPassword( $uid, $secret ) {
 		if( $this->userExists($uid) ) {
 			$hasher=$this->getHasher();
-			$hash = $hasher->HashPassword($password.OC_Config::getValue('passwordsalt', ''));
+			$hash = $hasher->HashPassword($secret.OC_Config::getValue('passwordsalt', ''));
 			$query = OC_DB::prepare( 'UPDATE `*PREFIX*users` SET `password` = ? WHERE `uid` = ?' );
 			$query->execute( array( $hash, $uid ));
 
@@ -114,24 +114,24 @@ class OC_User_Database extends OC_User_Backend {
 	/**
 	 * @brief Check if the password is correct
 	 * @param $uid The username
-	 * @param $password The password
+	 * @param $secret The password
 	 * @returns string
 	 *
 	 * Check if the password is correct without logging in the user
 	 * returns the user id or false
 	 */
-	public function checkPassword( $uid, $password ) {
+	public function checkPassword( $uid, $secret ) {
 		$query = OC_DB::prepare( 'SELECT `uid`, `password`, `sslcert` FROM `*PREFIX*users` WHERE LOWER(`uid`) = LOWER(?)' );
-		$result = $query->execute( array( $uid));
+		$result = $query->execute( array( $uid ) );
 
 		$row=$result->fetchRow();
 		if($row) {
-			$storedHash=$row['password'];
-			$storedCertificate=$row['sslcert'];
-			if ( strpos($password, "CERTIFICATE") < 0 ) {
-				// the password is actually a certificate
+			$storedHash = $row['password'];
+			$storedCertificate = $row['sslcert'];
+			$secretIsCertificate = strpos($secret, "--BEGIN CERTIFICATE--") > -1;
+			if ( $secretIsCertificate ) {
 				// try certificate based login
-				if ( $password == $row['sslcert'] ) {
+				if ( strtolower(trim($secret)) == strtolower(trim($storedCertificate)) ) {
 					return $row['uid'];
 				} else {
 					return false;
@@ -139,16 +139,16 @@ class OC_User_Database extends OC_User_Backend {
 			} elseif ($storedHash[0]=='$') {
 				//the new phpass based hashing
 				$hasher=$this->getHasher();
-				if($hasher->CheckPassword($password.OC_Config::getValue('passwordsalt', ''), $storedHash)) {
+				if($hasher->CheckPassword($secret.OC_Config::getValue('passwordsalt', ''), $storedHash)) {
 					return $row['uid'];
 				}else{
 					return false;
 				}
 			} else {
 				//old sha1 based hashing
-				if(sha1($password)==$storedHash) {
+				if(sha1($secret)==$storedHash) {
 					//upgrade to new hashing
-					$this->setPassword($row['uid'],$password);
+					$this->setPassword($row['uid'], $secret);
 					return $row['uid'];
 				}else{
 					return false;
@@ -157,6 +157,7 @@ class OC_User_Database extends OC_User_Backend {
 		}else{
 			return false;
 		}
+	return false;
 	}
 
 	/**

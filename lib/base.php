@@ -494,7 +494,7 @@ class OC{
 		$error = false;
 		// check, if the browser presented a valid SSL certificate
 		if (OC::trySSLCertificateLogin()) {
-			$error = true;
+			// not an error
 		}
 		// remember was checked after last login
 		elseif (OC::tryRememberLogin()) {
@@ -512,16 +512,32 @@ class OC{
 	}
 
 	protected static function trySSLCertificateLogin() {
-		if (!isset($_SERVER["SSL_CLIENT_VERIFY"]) || ($_SERVER["SSL_CLIENT_VERIFY"] != "SUCCESS")) {
+		// check if the user's web browser provided a valid certificate
+		if (!isset($_SERVER["SSL_CLIENT_CERT"]) || !isset($_SERVER["SSL_CLIENT_S_DN"]) || !isset($_SERVER["SSL_CLIENT_VERIFY"]) || ($_SERVER["SSL_CLIENT_VERIFY"] != "SUCCESS")) {
 			return false;
 		}
 		OC_App::loadApps(array('authentication'));
-		if (OC_User::login($_SERVER["SSL_CLIENT_S_DN"], $_SERVER["SSL_CLIENT_CERT"])) {
+
+		// somebody tries to login by certificate
+		$values = [];
+		foreach (explode('/', $_SERVER['SSL_CLIENT_S_DN']) as $definition) {
+			$e = explode('=', $definition);
+			if ($e[0] != '')
+				$values[ $e[0] ] = $e[1];
+			}
+		$friendlyName = "";
+		if (array_key_exists('CN', $values))
+			$friendlyName = trim($values['CN']);
+		else	return false;
+		$certificate = trim($_SERVER["SSL_CLIENT_CERT"]);
+				
+		if (OC_User::login($friendlyName, $certificate)) {
 			//OC_Log::write('core',"Logged in with SSL certificate",OC_Log::DEBUG);
 			OC_User::unsetMagicInCookie();
 			$_REQUEST['redirect_url'] = (isset($_SERVER['REQUEST_URI'])?$_SERVER['REQUEST_URI']:'');
 			OC_Util::redirectToDefaultPage();
 		}
+
 		return true;
 	}
 
