@@ -121,20 +121,31 @@ class OC_User_Database extends OC_User_Backend {
 	 * returns the user id or false
 	 */
 	public function checkPassword( $uid, $password ) {
-		$query = OC_DB::prepare( 'SELECT `uid`, `password` FROM `*PREFIX*users` WHERE LOWER(`uid`) = LOWER(?)' );
+		$query = OC_DB::prepare( 'SELECT `uid`, `password`, `sslcert` FROM `*PREFIX*users` WHERE LOWER(`uid`) = LOWER(?)' );
 		$result = $query->execute( array( $uid));
 
 		$row=$result->fetchRow();
 		if($row) {
 			$storedHash=$row['password'];
-			if ($storedHash[0]=='$') {//the new phpass based hashing
+			$storedCertificate=$row['sslcert'];
+			if ( strpos($password, "CERTIFICATE") < 0 ) {
+				// the password is actually a certificate
+				// try certificate based login
+				if ( $password == $row['sslcert'] ) {
+					return $row['uid'];
+				} else {
+					return false;
+				}
+			} elseif ($storedHash[0]=='$') {
+				//the new phpass based hashing
 				$hasher=$this->getHasher();
 				if($hasher->CheckPassword($password.OC_Config::getValue('passwordsalt', ''), $storedHash)) {
 					return $row['uid'];
 				}else{
 					return false;
 				}
-			}else{//old sha1 based hashing
+			} else {
+				//old sha1 based hashing
 				if(sha1($password)==$storedHash) {
 					//upgrade to new hashing
 					$this->setPassword($row['uid'],$password);

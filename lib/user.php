@@ -226,7 +226,7 @@ class OC_User {
 	/**
 	 * @brief Try to login a user
 	 * @param $uid The username of the user to log in
-	 * @param $password The password of the user
+	 * @param $password The password or certificate of the user
 	 * @returns true/false
 	 *
 	 * Log in a user and regenerate a new session - if the password is ok
@@ -237,6 +237,7 @@ class OC_User {
 
 		if( $run ) {
 			$uid = self::checkPassword( $uid, $password );
+			// only login if this user is enabled
 			$enabled = self::isEnabled($uid);
 			if($uid && $enabled) {
 				session_regenerate_id(true);

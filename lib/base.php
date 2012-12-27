@@ -492,19 +492,37 @@ class OC{
 	protected static function handleLogin() {
 		OC_App::loadApps(array('prelogin'));
 		$error = false;
-		// remember was checked after last login
-		if (OC::tryRememberLogin()) {
-			// nothing more to do
-
-		// Someone wants to log in :
-		} elseif (OC::tryFormLogin()) {
+		// check, if the browser presented a valid SSL certificate
+		if (OC::trySSLCertificateLogin()) {
 			$error = true;
-
+		}
+		// remember was checked after last login
+		elseif (OC::tryRememberLogin()) {
+			// nothing more to do
+		}
+		// Someone wants to log in :
+		elseif (OC::tryFormLogin()) {
+			$error = true;
+		}
 		// The user is already authenticated using Apaches AuthType Basic... very usable in combination with LDAP
-		} elseif (OC::tryBasicAuthLogin()) {
+		elseif (OC::tryBasicAuthLogin()) {
 			$error = true;
 		}
 		OC_Util::displayLoginPage($error);
+	}
+
+	protected static function trySSLCertificateLogin() {
+		if (!isset($_SERVER["SSL_CLIENT_VERIFY"]) || ($_SERVER["SSL_CLIENT_VERIFY"] != "SUCCESS")) {
+			return false;
+		}
+		OC_App::loadApps(array('authentication'));
+		if (OC_User::login($_SERVER["SSL_CLIENT_S_DN"], $_SERVER["SSL_CLIENT_CERT"])) {
+			//OC_Log::write('core',"Logged in with SSL certificate",OC_Log::DEBUG);
+			OC_User::unsetMagicInCookie();
+			$_REQUEST['redirect_url'] = (isset($_SERVER['REQUEST_URI'])?$_SERVER['REQUEST_URI']:'');
+			OC_Util::redirectToDefaultPage();
+		}
+		return true;
 	}
 
 	protected static function tryRememberLogin() {
