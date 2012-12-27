@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title><?php echo isset($_['application']) && !empty($_['application'])?$_['application'].' | ':'' ?>ownCloud <?php echo OC_User::getUser()?' ('.OC_User::getUser().') ':'' ?></title>
+		<title><?php echo isset($_['application']) && !empty($_['application']) ? $_['application'] : '' ?> - <?php echo OC_User::getUser() ? OC_User::getUser() : '' ?></title>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<link rel="shortcut icon" href="<?php echo image_path('', 'favicon.png'); ?>" /><link rel="apple-touch-icon-precomposed" href="<?php echo image_path('', 'favicon-touch.png'); ?>" />
 		<?php foreach($_['cssfiles'] as $cssfile): ?>
@@ -30,8 +30,8 @@
 
 	<body id="<?php echo $_['bodyid'];?>">
 		<header><div id="header">
-			<a href="<?php echo link_to('', 'index.php'); ?>" title="" id="owncloud"><img class="svg" src="<?php echo image_path('', 'logo-wide.svg'); ?>" alt="ownCloud" /></a>
-			<a class="header-right header-action" id="logout" href="<?php echo link_to('', 'index.php'); ?>?logout=true"><img class="svg" alt="<?php echo $l->t('Log out');?>" title="<?php echo $l->t('Log out');  echo OC_User::getUser()?' ('.OC_User::getUser().') ':'' ?>" src="<?php echo image_path('', 'actions/logout.svg'); ?>" /></a>
+			<a  href="/" title="Zur&uuml;ck zum Desktop" id="owncloud"><img class="svg" src="<?php echo image_path('', 'logo-wide.svg'); ?>" alt="Zur&uuml;ck zum Desktop" /></a>
+			<a class="header-right header-action" id="logout" href="/" title="Zur&uuml;ck zum Desktop"><img class="svg" alt="Zur&uuml;ck zum Desktop" src="<?php echo image_path('', 'actions/logout.svg'); ?>" /></a>
 			<form class="searchbox header-right" action="#" method="post">
 				<input id="searchbox" class="svg" type="search" name="query" value="<?php if(isset($_POST['query'])) {echo OC_Util::sanitizeHTML($_POST['query']);};?>" autocomplete="off" x-webkit-speech />
 			</form>
